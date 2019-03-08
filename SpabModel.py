@@ -1,7 +1,9 @@
 #!/usr/bin/python3
 class SpabModel:
 
-    def __init__(self):
+#TODO Update 
+
+    def __init__(self): 
         self.Waypoints = []
         self.pendingWaypoints = []
         self.Home = ()
@@ -11,3 +13,8 @@ class SpabModel:
         self.is_enabled = None
         self.channels = None
         self.attitude_data = None
+        self.temperature = None
+
+    def get_all_data(self):
+            data = []
+

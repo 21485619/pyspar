@@ -10,11 +10,14 @@ from optparse import OptionParser
 import collections
 import TelemManager
 import MavlinkManager
+import SensorManager
 import SpabModel
 
 
 task = sched.scheduler(time.time, time.sleep)
 telemPeriod = 30   # seconds
+tempPeriod = 5
+imagePeriod = 600
 Locations = collections.deque(maxlen=10)    # circular buffer to limit memory use
 Delegates = {}
 Waypoints = []
@@ -66,6 +69,7 @@ def main():
         spabModel = SpabModel.SpabModel()
         telemManager = TelemManager.TelemManager(task, spabModel, modem, telemPeriod)
         mavlinkManager = MavlinkManager.MavlinkManager(task, spabModel, telemPeriod, master)
+        sensorManager = SensorManager.SensorManager(task, spabModel, tempPeriod, imagePeriod)
     except:
         print('failed to find devices')
         sys.exit(1)
@@ -97,6 +101,7 @@ def main():
     master.mav.set_mode_send(master.target_system, 216, 216)
     telemManager.start()
     mavlinkManager.start()
+    sensorManager.start()
     task.run(False)
     read_loop(master)
 

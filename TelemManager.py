@@ -4,17 +4,27 @@ import collections
 
 
 class TelemManager:
-    def __init__(self, Scheduler, model, Modem, TelemPeriod):
+    def __init__(self, Scheduler, model, Modem, TelemPeriod, SensorManager):
         self.task = Scheduler
         self.spabModel = model
         self.modem = Modem
         self.PollingPeriod = TelemPeriod
+        self.sensor_manager = SensorManager
         self.AcceptedCommands = collections.deque(maxlen=10)
-
+       
     def remoteTelemetry(self):
+        if self.sensor_manager.pendingImage:
+            self.image_telem()
+            self.sensor_manager.pendingImage = False
+        else:
+            self.req_count = 0
+            self.standard_telem()
         print('remote telemetry')
+        
+    def standard_telem(self)   
         body = json.dumps(self.spabModel.LastLocation)
         length = len(body)
+
         req = """POST /spab/data.cgi HTTP/1.1
 Host: therevproject.com
 Accept: */*
@@ -26,6 +36,25 @@ Content-Length: """
         print(req)
         self.modem.send(req)
         self.task.enter(self.PollingPeriod, 1, self.requestCommands, ())
+
+
+    def image_telem(self):
+        body = json.dumps(self.spabModel.LastLocation)
+        length = len(body)
+
+        req = """POST /spab/data.cgi HTTP/1.1
+Host: therevproject.com
+Accept: */*
+Connection: close
+Content-type: application/json
+Content-Length: """
+        req += str(length) + "\n\n"
+        req += body + "\r\n\r\n"
+        print(req)
+
+        self.modem.send(req)
+        self.task.enter(self.PollingPeriod, 1, self.requestCommands, ())
+
 
     def requestCommands(self):
         print('request commands')
