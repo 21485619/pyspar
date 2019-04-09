@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 import sys
 from pymavlink import mavutil
-
+import time
 
 class MavlinkManager:
     def __init__(self, Scheduler, model, PollingPeriod, Master):
@@ -11,9 +11,12 @@ class MavlinkManager:
         self.master = Master
         self.Seq = 0
         self.Count = 0
+        self.last_msg = None
+        self.ack = False
 
     def missionSender(self):
-        if self.spabModel.pendingWaypoints:
+        if self.spabModel.pendingWaypoints != self.spabModel.Waypoints:
+            self.clear_missions()
             self.start_waypoint_send(len(self.spabModel.pendingWaypoints))
         self.task.enter(5, 1, self.missionSender, ())
 
@@ -22,12 +25,21 @@ class MavlinkManager:
         print(self.master.target_system,
               mavutil.mavlink.MAV_COMP_ID_MISSIONPLANNER, waypoint_count)
         self.master.mav.mission_count_send(
-            self.master.target_system, mavutil.mavlink.MAV_COMP_ID_MISSIONPLANNER, 1+len(self.spabModel.pendingWaypoints))
+            self.master.target_system, mavutil.mavlink.MAV_COMP_ID_MISSIONPLANNER, len(self.spabModel.pendingWaypoints))
 
     def getWaypoints(self):
         self.master.mav.mission_request_list_send(
             self.master.target_system, mavutil.mavlink.MAV_COMP_ID_MISSIONPLANNER)
         self.task.enter(20, 1, self.getWaypoints, ())
+
+    def clear_missions(self):
+        self.master.mav.mission_clear_all_send(self.master.target_system)
+        self.last_msg = "clear_missions"
+
+    def update_home(self):
+        self.master.mav.set_home_position_send(
+            self.master.target_system, self.spabModel.newHome(0), self.spabModel.newHome(1),
+            0, 0, 0, 0, 0, 0, 0, 0)
 
     def start(self):
         self.task.enter(self.PollingPeriod, 1, self.missionSender, ())
@@ -73,20 +85,30 @@ class MavlinkManager:
             ('timestamp', 'latitude', 'longitude', 'temperature', 'salinity'), gps_data[0:3]+(0, 0)))
 
     def handle_mission_ack(self, msg):
-        #print("handle_mission_ack")
+        print("handle_mission_ack")
         print(msg)
-        if msg.type != mavutil.mavlink.MAV_MISSION_ACCEPTED:
-            print("mission upload failed")
-        else:
-            print("mission upload success")
-            self.master.mav.mission_current_send(1)  # start misson at MavPt 1
-            self.master.mav.command_long_send(self.master.target_system, mavutil.mavlink.MAV_COMP_ID_ALL,
-                                              mavutil.mavlink.MAV_CMD_DO_SET_MODE, mavutil.mavlink.MAV_MODE_GUIDED_ARMED, 0, 0, 0, 0, 0, 0, 0)
-            self.spabModel.pendingWaypoints.clear()
-            self.Count = 0
-            self.Seq = 0
+        if self.last_msg == "clear_missions":
+            if msg.type != mavutil.mavlink.MAV_MISSION_ACCEPTED:
+                print("mission clear failed")
+                self.clear_missions()
+            else:
+                print("mission clear success")
+                self.ack = True
+        elif self.last_msg == "upload_missions":
+            if msg.type != mavutil.mavlink.MAV_MISSION_ACCEPTED:
+                print("mission upload failed")
+            else:
+                print("mission upload success")
+                self.master.mav.mission_current_send(1)  # start misson at MavPt 1
+                self.master.mav.command_long_send(self.master.target_system, mavutil.mavlink.MAV_COMP_ID_ALL,
+                                                  mavutil.mavlink.MAV_CMD_DO_SET_MODE, mavutil.mavlink.MAV_MODE_GUIDED_ARMED, 0, 0, 0, 0, 0, 0, 0)
+                self.spabModel.pendingWaypoints.clear()
+                self.Count = 0
+                self.Seq = 0
+                self.ack = True
 
     def handle_mission_count(self, msg):
+        #print("mission_count")
         self.Count = msg.count
         self.Seq = 0
         print(str(self.Count) + " waypoints")
@@ -94,18 +116,26 @@ class MavlinkManager:
             self.master.target_system, mavutil.mavlink.MAV_COMP_ID_ALL, self.Seq)
 
     def handle_mission_item(self, msg):
+        #print("mission_item")
         print("WP " + str(msg.seq) + " " + str(msg.x) + " " + str(msg.y))
-        if(self.Seq != self.Count):
-            if(self.Seq == 0):
-                self.spabModel.Home = (msg.x, msg.y)
+        if self.Seq <= self.Count + 1:
+            if msg.seq == 0:
+                self.spabModel.currentHome = (msg.x, msg.y)
+                #print("Home: ", self.spabModel.currentHome)
             else:
-                self.spabModel.Waypoints.append((msg.x, msg.y))
+                print(msg.seq, len(self.spabModel.Waypoints))
+                if msg.seq <= len(self.spabModel.Waypoints):
+                    self.spabModel.Waypoints[msg.seq - 1] = (msg.x, msg.y)
+                else:
+                    self.spabModel.Waypoints.append((msg.x, msg.y))
             self.master.mav.mission_request_send(
                 self.master.target_system, mavutil.mavlink.MAV_COMP_ID_ALL, self.Seq)
             self.Seq += 1
         else:
             self.master.mav.mission_ack_send(
                 self.master.target_system, mavutil.mavlink.MAV_COMP_ID_ALL, mavutil.mavlink.MAV_MISSION_ACCEPTED)
+            print("Spab Waypoints:")
+            print(self.spabModel.Waypoints)
 
     def handle_mission_current(self, msg):
         print("starting at WP " + str(msg.seq))
@@ -113,9 +143,8 @@ class MavlinkManager:
     def handle_mission_request(self, msg):
         print(msg)
         print("appending waypoints")
-        print(msg.seq)
         if msg.seq == 0:
-            waypoint = self.spabModel.Home
+            waypoint = self.spabModel.newHome
         else:
             waypoint = self.spabModel.pendingWaypoints[msg.seq-1]
         print(waypoint)

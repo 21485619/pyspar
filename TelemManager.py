@@ -26,7 +26,7 @@ Content-type: application/json
 Content-Length: """
         req += str(length) + "\n\n"
         req += body + "\r\n\r\n"
-        print(req)
+        #print(req)
         self.modem.send(req)
         self.task.enter(self.PollingPeriod, 1, self.requestCommands, ())
 
@@ -34,7 +34,7 @@ Content-Length: """
         #print('request commands')
         """Requests new commands JSON from control server and registers a callback handler"""
         req = "GET http://therevproject.com/spab/requestCommands.cgi\r\n\r\n"
-        print(req)
+        #print(req)
         self.modem.send(req)
         self.task.enter(self.PollingPeriod, 1, self.remoteTelemetry, ())
 
@@ -43,7 +43,7 @@ Content-Length: """
         print(json[0]["message"])
 
     def HandleCommand(self, cmdList):
-        print('handling commands')
+        #print('handling commands')
         print(cmdList)
         for elem in cmdList:
             if(elem["taskId"] in self.AcceptedCommands):
@@ -52,26 +52,24 @@ Content-Length: """
             self.AcceptedCommands.append(elem["taskId"])
             self.spabModel.pendingWaypoints.append(
                 (float(elem["latitude"]), float(elem["longitude"])))
-        print(self.spabModel.Waypoints)
+        print(self.spabModel.pendingWaypoints)
 
     def HandleReceipt(self, sender, earg):
-        print("handle receipt")
-        print(earg)
+        #print("handle receipt")
         s = earg.decode("utf-8")
-        print(s)
         # deal with http headers
         lines = s.splitlines()
         print(lines)
-        if(lines[0] == "HTTP/1.1 200 OK"):
+        if lines[0] == "HTTP/1.1 200 OK":
             s = lines[10]
         # deal with json
         try:
             data = json.loads(s)
             print(str(data))
-            if(data[0]["type"] == "telemAck"):
+            if data[0]["type"] == "telemAck":
                 print("received telemAck")
                 self.HandleTelemAck(data[1:])
-            elif(data[0]["type"] == "command"):
+            elif data[0]["type"] == "command":
                 print("received command")
                 self.HandleCommand(data[1:])
         except Exception as e:

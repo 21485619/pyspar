@@ -6,7 +6,8 @@ class SpabModel:
     def __init__(self):
         self.Waypoints = []
         self.pendingWaypoints = [] # Expect each pending waypoint as a tuple in the form (id, latitude, longitude)
-        self.Home = ()
+        self.curentHome = ()
+        self.newHome = ()
         self.LastLocation = {}
         self.mode = None
         self.is_armed = None
