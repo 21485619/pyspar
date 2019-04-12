@@ -13,10 +13,10 @@ import MavlinkManager
 import SpabModel
 
 
-
 task = sched.scheduler(time.time, time.sleep)
 telemPeriod = 30   # seconds
-Locations = collections.deque(maxlen=10)    # circular buffer to limit memory use
+# circular buffer to limit memory use
+Locations = collections.deque(maxlen=10)
 Delegates = {}
 Waypoints = []
 
@@ -46,13 +46,20 @@ def catch(sig, frame):
 def main():
     print("starting")
     parser = OptionParser("spab.py [options]")
-    parser.add_option("--baudrate", dest="baudrate", type='int', help='master port baud rate', default=57600)
-    parser.add_option("--device", dest="device", default=None, help="serial device")
-    parser.add_option("--modem", dest="mport", default=None, help="modem serial port")
-    parser.add_option("--rate", dest="rate", default=4, type='int', help='requested stream rate')
-    parser.add_option("--source-system", dest="SOURCE_SYSTEM", type='int', default=255, help="MAVLink source system for this GCS")
-    parser.add_option("--showmessages", dest="showmessages", action='store_true', help="show incoming messages", default=False)
-    parser.add_option("--logfile", dest="log", default=None, help="name of logfile")
+    parser.add_option("--baudrate", dest="baudrate", type='int',
+                      help='master port baud rate', default=57600)
+    parser.add_option("--device", dest="device",
+                      default=None, help="serial device")
+    parser.add_option("--modem", dest="mport", default=None,
+                      help="modem serial port")
+    parser.add_option("--rate", dest="rate", default=4,
+                      type='int', help='requested stream rate')
+    parser.add_option("--source-system", dest="SOURCE_SYSTEM", type='int',
+                      default=255, help="MAVLink source system for this GCS")
+    parser.add_option("--showmessages", dest="showmessages",
+                      action='store_true', help="show incoming messages", default=False)
+    parser.add_option("--logfile", dest="log",
+                      default=None, help="name of logfile")
     (opts, args) = parser.parse_args()
     if opts.device is None or opts.mport is None:
         print("You must specify a mavlink device and a modem device")
@@ -63,10 +70,12 @@ def main():
     # init objects
     try:
         master = mavutil.mavlink_connection(opts.device, baud=opts.baudrate)
-        modem = F2414Modem.F2414Modem(opts.mport, opts.baudrate)
+        modem = F2414Modem.F2414Modem(opts.mport, baudrate=opts.baudrate)
         spabModel = SpabModel.SpabModel()
-        telemManager = TelemManager.TelemManager(task, spabModel, modem, telemPeriod)
-        mavlinkManager = MavlinkManager.MavlinkManager(task, spabModel, telemPeriod, master)
+        telemManager = TelemManager.TelemManager(
+            task, spabModel, modem, telemPeriod)
+        mavlinkManager = MavlinkManager.MavlinkManager(
+            task, spabModel, telemPeriod, master)
     except:
         print('failed to find devices')
         sys.exit(1)
@@ -88,7 +97,7 @@ def main():
         "BAD_DATA": mavlinkManager.handle_bad_data,
         "MISSION_COUNT": mavlinkManager.handle_mission_count,
         "MISSION_ITEM": mavlinkManager.handle_mission_item
-        #"MISSION_CURRENT": mavlinkManager.handle_mission_current
+        # "MISSION_CURRENT": mavlinkManager.handle_mission_current
     }
 
     # set to run

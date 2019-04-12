@@ -36,7 +36,7 @@ class F2414Modem:
         ser = serial.Serial(port)
         self.die = False
         self.blocksize = 1024
-        ser.baudrate = baudrate
+        ser.baudrate = 115200
         ser.timeout = 1
         self.sport = ser
         self.handlers = []
