@@ -44,7 +44,6 @@ def catch(sig, frame):
 
 
 def main():
-    print("starting")
     parser = OptionParser("spab.py [options]")
     parser.add_option("--baudrate", dest="baudrate", type='int',
                       help='master port baud rate', default=57600)
