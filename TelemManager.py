@@ -18,23 +18,23 @@ class TelemManager:
         #    ('timestamp', 'latitude', 'longitude', 'temperature', 'salinity'),  ("0", 111, 66) + (0, 0)))
         body = json.dumps(self.spabModel.LastLocation)
         length = len(body)
-        req = """POST /spab/data.cgi HTTP/1.1
+        req = """POST /solarboat/api/data.cgi HTTP/1.1
 Host: therevproject.com
 Accept: */*
 Connection: close
 Content-type: application/json
 Content-Length: """
-        req += str(length) + "\n\n"
+        req += str(length) + "\r\n\r\n"
         req += body + "\r\n\r\n"
-        #print(req)
+        print("POST")
         self.modem.send(req)
         self.task.enter(self.PollingPeriod, 1, self.requestCommands, ())
 
     def requestCommands(self):
         #print('request commands')
         """Requests new commands JSON from control server and registers a callback handler"""
-        req = "GET http://therevproject.com/spab/requestCommands.cgi\r\n\r\n"
-        #print(req)
+        req = "GET http://therevproject.com/solarboat/command.cgi\r\n\r\n"
+        print(req)
         self.modem.send(req)
         self.task.enter(self.PollingPeriod, 1, self.remoteTelemetry, ())
 
@@ -55,12 +55,13 @@ Content-Length: """
         print(self.spabModel.pendingWaypoints)
 
     def HandleReceipt(self, sender, earg):
-        #print("handle receipt")
+        print("handle receipt")
+        #print(earg)
         s = earg.decode("utf-8")
         # deal with http headers
         lines = s.splitlines()
-        print(lines)
-        if lines[0] == "HTTP/1.1 200 OK":
+        #print(lines)
+        if(lines[0] == "HTTP/1.1 200 OK"):
             s = lines[10]
         # deal with json
         try:

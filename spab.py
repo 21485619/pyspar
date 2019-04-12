@@ -14,7 +14,7 @@ import SpabModel
 
 
 task = sched.scheduler(time.time, time.sleep)
-telemPeriod = 10   # seconds
+telemPeriod = 30   # seconds
 # circular buffer to limit memory use
 Locations = collections.deque(maxlen=10)
 Delegates = {}
