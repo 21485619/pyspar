@@ -14,7 +14,7 @@ class TelemManager:
 
     def remoteTelemetry(self):
         #print('remote telemetry')
-        #self.spabModel.LastLocation = dict(zip(
+        # self.spabModel.LastLocation = dict(zip(
         #    ('timestamp', 'latitude', 'longitude', 'temperature', 'salinity'),  ("0", 111, 66) + (0, 0)))
         body = json.dumps(self.spabModel.LastLocation)
         length = len(body)
@@ -38,12 +38,11 @@ Content-Length: """
         self.modem.send(req)
         self.task.enter(self.PollingPeriod, 1, self.remoteTelemetry, ())
 
+    def handleDataUploadResponse(self, uploadResponse):
+        # This method should position/sample data being uploaded to the server
+        print(uploadResponse)
 
-    def HandleTelemAck(self, json):
-        print(json[0]["message"])
-
-    def HandleCommand(self, cmdList):
-        #print('handling commands')
+    def handleCommandList(self, cmdList):
         print(cmdList)
         for elem in cmdList:
             if(elem["taskId"] in self.AcceptedCommands):
@@ -54,32 +53,33 @@ Content-Length: """
                 (float(elem["latitude"]), float(elem["longitude"])))
         print(self.spabModel.pendingWaypoints)
 
+    def handleCommandComplete(self, cmdCompleteResponse):
+        # This method should command complete data being uploaded to the server
+        print(cmdCompleteResponse)
+
     def HandleReceipt(self, sender, earg):
-        print("handle receipt")
-        #print(earg)
+        # print(earg)
         s = earg.decode("utf-8")
         # deal with http headers
         lines = s.splitlines()
-        #print(lines)
+        # print(lines)
         if(lines[0] == "HTTP/1.1 200 OK"):
             s = lines[10]
         # deal with json
         try:
-            data = json.loads(s)
-            print(str(data))
-            if data[0]["type"] == "telemAck":
-                print("received telemAck")
-                self.HandleTelemAck(data[1:])
-            elif data[0]["type"] == "command":
-                print("received command")
-                self.HandleCommand(data[1:])
+            respContent = json.loads(s)
+            if respContent["type"] == "dataUpload":
+                self.handleDataUploadResponse(respContent)
+            elif respContent["type"] == "cmdList":
+                self.handleCommandList(respContent["data"])
+            elif respContent == "cmdComplete":
+                self.handleCommandComplete(respContent)
         except Exception as e:
             print(str(e))
 
     def start(self):
         self.task.enter(self.PollingPeriod, 1, self.requestCommands, ())
         self.modem += self.HandleReceipt
-
 
     def stop(self):
         self.task.cancel(self.requestCommands)
