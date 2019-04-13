@@ -1,5 +1,4 @@
 from ds18b20 import DS18B20
-from time import sleep
 from picamera import PiCamera
 import base64
 import sched
@@ -10,55 +9,58 @@ from adafruit_ads1x15.analog_in import AnalogIn
 
 
 class SensorManager:
-    def __init__(self, scheduler, model, tempPeriod, picPeriod, readings):
+    def __init__(self, scheduler, model, temp_period, pic_period, readings):
         self.task = scheduler
         self.spabModel = model
-        self.temp_p = tempPeriod
-        self.pic_p = picPeriod
+        self.temp_p = temp_period
+        self.pic_p = pic_period
         self.readings = readings
         self.temp_sensor = DS18B20()
-        self.temps = None
         self.camera = PiCamera()
         self.camera.resolution = (320, 240)
         self.camera.start_preview()
-        self.base_64_string = None
         self.pendingImage = False
         self.ads = ADS.ADS1115
         self.chan = AnalogIn(self.ads, ADS.P0)
-        self.conductivity_v = None
-        self.conductivity = None
 
     def start(self):
         # self.task.enter(6, 1, self.get_temp, ())
         self.task.enter(10, 1, self.capture_image, argument=('image.jpg',))
-        self.task.enter(8, 1, self.get_conductivity, ())
+        self.task.enter(8, 1, self.update_readings, ())
 
     def stop(self):
         self.task.cancel(self.get_temp)
         self.task.cancel(self.capture_image)
+        
+    def update_readings(self):
+        temp = self.get_temp()
+        cv = self.get_conductivity_v()
+        self.get_conductivity(temp, cv)
+        print("Readings updated")
 
     def get_temp(self):
         # print("get_temp")
-        self.temps = self.temp_sensor.get_temperature()
-        self.spabModel.temperature = self.temps
-
+        temp = self.temp_sensor.get_temperature()
+        self.spabModel.temperature = temp
         # self.task.enter(self.temp_p, 1, self.get_temp,())
+        return temp
 
     def capture_image(self, filename):
         print("capture_image")
         self.camera.capture(filename)
+        self.spabModel.image = self.convert(filename)
         self.pendingImage = True
-        self.convert(filename)
-        self.spabModel.image = self.base_64_string
         self.task.enter(self.pic_p, 1, self.capture_image, argument=('image.jpg',))
 
-    def convert(self, filename):
+    @staticmethod
+    def convert(filename):
         image = open(filename, 'rb')
         image_read = image.read()
-        self.base_64_string = base64.encodebytes(image_read)
-
-    def deconvert(self, filename):
-        decoded = base64.decodebytes(self.base_64_string)
+        return base64.encodebytes(image_read)
+    
+    @staticmethod
+    def deconvert(base_64_string, filename):
+        decoded = base64.decodebytes(base_64_string)
         image_result = open(filename, 'wb')
         image_result.write(decoded)
 
@@ -70,26 +72,21 @@ class SensorManager:
         volt_sum = 0
         for i in volts:
             volt_sum += i
-        average = volt_sum / self.readings
-        self.conductivity_v = average
+        return volt_sum / self.readings
 
     # TODO Calibrate
     # Return value of conductivity in ms/cm
-    def get_conductivity(self):
-        self.get_temp()
-        self.get_conductivity_v()
-        temp = self.temps
+    def get_conductivity(self, temp, cv):
         temp_coefficient = 1.0 + 0.0185 * (temp - 25.0)
-        cv = self.conductivity_v / 1000 / temp_coefficient
-        if cv < 448:
-            conductivity = 6.84 * cv - 64.32
-        elif cv < 1457:
-            conductivity = 6.98 * cv - 127
+        volt_coefficient = cv / 1000 / temp_coefficient
+        if volt_coefficient < 448:
+            conductivity = 6.84 * volt_coefficient - 64.32
+        elif volt_coefficient < 1457:
+            conductivity = 6.98 * volt_coefficient - 127
         else:
-            conductivity = 5.3 * cv + 2278
-        self.conductivity = conductivity / 1000
-        self.spabModel.conductivity = self.conductivity
-        self.task.enter(self.temp_p, 1, self.get_conductivity, ())
+            conductivity = 5.3 * volt_coefficient + 2278
+        self.spabModel.conductivity = conductivity / 1000
+        #self.task.enter(self.temp_p, 1, self.get_conductivity, ())
 
 
 def main():
@@ -101,7 +98,8 @@ def main():
 
     while True:
         task.run(blocking=False)
-        time.sleep(0.001)
+        sensor_manager.update_readings()
+        time.sleep(1)
 
 
 if __name__ == '__main__':
