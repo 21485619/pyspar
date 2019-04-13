@@ -16,6 +16,7 @@ class MavlinkManager:
 
     def missionSender(self):
         if self.spabModel.pendingWaypoints != self.spabModel.Waypoints:
+            print("Waypoint Difference Found")
             self.clear_missions()
             self.start_waypoint_send(len(self.spabModel.pendingWaypoints))
         self.task.enter(5, 1, self.missionSender, ())
@@ -33,7 +34,7 @@ class MavlinkManager:
         self.task.enter(20, 1, self.getWaypoints, ())
 
     def clear_missions(self):
-        self.master.mav.mission_clear_all_send(self.master.target_system)
+        self.master.mav.mission_clear_all_send(self.master.target_system, mavutil.mavlink.MAV_COMP_ID_MISSIONPLANNER)
         self.last_msg = "clear_missions"
 
     def update_home(self):
@@ -102,7 +103,6 @@ class MavlinkManager:
                 self.master.mav.mission_current_send(1)  # start misson at MavPt 1
                 self.master.mav.command_long_send(self.master.target_system, mavutil.mavlink.MAV_COMP_ID_ALL,
                                                   mavutil.mavlink.MAV_CMD_DO_SET_MODE, mavutil.mavlink.MAV_MODE_GUIDED_ARMED, 0, 0, 0, 0, 0, 0, 0)
-                self.spabModel.pendingWaypoints.clear()
                 self.Count = 0
                 self.Seq = 0
                 self.ack = True
@@ -148,11 +148,12 @@ class MavlinkManager:
         else:
             waypoint = self.spabModel.pendingWaypoints[msg.seq-1]
         print(waypoint)
-        self.master.mav.mission_item_send(self.master.target_system,
-                                          mavutil.mavlink.MAV_COMP_ID_ALL,
-                                          msg.seq,
-                                          mavutil.mavlink.MAV_FRAME_GLOBAL,
-                                          mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1, 1,
-                                          1.0, 15.0, 0.0,
-                                          0.0, waypoint[0], waypoint[1], 0)
+        if waypoint:
+            self.master.mav.mission_item_send(self.master.target_system,
+                                              mavutil.mavlink.MAV_COMP_ID_ALL,
+                                              msg.seq,
+                                              mavutil.mavlink.MAV_FRAME_GLOBAL,
+                                              mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1, 1,
+                                              1.0, 15.0, 0.0,
+                                              0.0, waypoint[0], waypoint[1], 0)
         pass  # eof

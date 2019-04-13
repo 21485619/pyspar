@@ -44,13 +44,15 @@ Content-Length: """
 
     def handleCommandList(self, cmdList):
         print(cmdList)
-        for elem in cmdList:
-            if(elem["taskId"] in self.AcceptedCommands):
+        cmdList.sort(key="id")
+        self.spabModel.pendingWaypoints = [(cmd["latitude"], cmd["longitude"]) for cmd in cmdList]
+        '''for elem in cmdList:
+            if elem["uuid"] in self.AcceptedCommands:
                 continue
             print(elem["action"])
             self.AcceptedCommands.append(elem["taskId"])
             self.spabModel.pendingWaypoints.append(
-                (float(elem["latitude"]), float(elem["longitude"])))
+                (float(elem["latitude"]), float(elem["longitude"])))'''
         print(self.spabModel.pendingWaypoints)
 
     def handleCommandComplete(self, cmdCompleteResponse):
