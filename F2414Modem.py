@@ -4,11 +4,10 @@ import threading
 import os
 
 class F2414Modem:
-
     def send(self, data):
         """ Send string to remote server """
         self.sport.write(b'don')
-        time.sleep(1)
+        time.sleep(0.8)
         self.sport.write(bytearray(data, encoding='utf-8'))
 
     def subscribe(self, handler):
@@ -36,7 +35,7 @@ class F2414Modem:
         ser = serial.Serial(port)
         self.die = False
         self.blocksize = 1024
-        ser.baudrate = 115200
+        ser.baudrate = baudrate
         ser.timeout = 1
         self.sport = ser
         self.handlers = []

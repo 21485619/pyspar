@@ -33,7 +33,7 @@ Content-Length: """
     def requestCommands(self):
         #print('request commands')
         """Requests new commands JSON from control server and registers a callback handler"""
-        req = "GET http://therevproject.com/solarboat/command.cgi\r\n\r\n"
+        req = "GET http://therevproject.com/solarboat/api/command.cgi\r\n\r\n"
         print(req)
         self.modem.send(req)
         self.task.enter(self.PollingPeriod, 1, self.remoteTelemetry, ())
@@ -44,15 +44,10 @@ Content-Length: """
 
     def handleCommandList(self, cmdList):
         print(cmdList)
-        cmdList.sort(key="id")
-        self.spabModel.pendingWaypoints = [(cmd["latitude"], cmd["longitude"]) for cmd in cmdList]
-        '''for elem in cmdList:
-            if elem["uuid"] in self.AcceptedCommands:
-                continue
-            print(elem["action"])
-            self.AcceptedCommands.append(elem["taskId"])
-            self.spabModel.pendingWaypoints.append(
-                (float(elem["latitude"]), float(elem["longitude"])))'''
+        sorted_list = sorted(cmdList, key=lambda k: k['id'])
+        #cmdList.sort(key="id")
+        print(sorted_list)
+        self.spabModel.pendingWaypoints = [(cmd["latitude"], cmd["longitude"]) for cmd in sorted_list]
         print(self.spabModel.pendingWaypoints)
 
     def handleCommandComplete(self, cmdCompleteResponse):
@@ -64,7 +59,7 @@ Content-Length: """
         s = earg.decode("utf-8")
         # deal with http headers
         lines = s.splitlines()
-        # print(lines)
+        print(lines)
         if(lines[0] == "HTTP/1.1 200 OK"):
             s = lines[10]
         # deal with json

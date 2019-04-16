@@ -14,7 +14,7 @@ import SpabModel
 
 
 task = sched.scheduler(time.time, time.sleep)
-telemPeriod = 30   # seconds
+telemPeriod = 20   # seconds
 # circular buffer to limit memory use
 Locations = collections.deque(maxlen=10)
 Delegates = {}
@@ -46,7 +46,7 @@ def catch(sig, frame):
 def main():
     parser = OptionParser("spab.py [options]")
     parser.add_option("--baudrate", dest="baudrate", type='int',
-                      help='master port baud rate', default=57600)
+                      help='master port baud rate', default=115200)
     parser.add_option("--device", dest="device",
                       default=None, help="serial device")
     parser.add_option("--modem", dest="mport", default=None,
@@ -69,7 +69,7 @@ def main():
     # init objects
     try:
         master = mavutil.mavlink_connection(opts.device, baud=opts.baudrate)
-        modem = F2414Modem.F2414Modem(opts.mport, baudrate=opts.baudrate)
+        modem = F2414Modem.F2414Modem(opts.mport, baudrate=9600)
         spabModel = SpabModel.SpabModel()
         telemManager = TelemManager.TelemManager(
             task, spabModel, modem, telemPeriod)
