@@ -31,32 +31,38 @@ class MavlinkManager:
         self.task.enter(5, 1, self.getWaypoints, ())
 
     def handle_bad_data(self, msg):
+
         if mavutil.all_printable(msg.data):
             sys.stderr.write(msg.data)
             sys.stderr.flush()
 
     def handle_heartbeat(self, msg):
+        print("handle_heartbeat")
         self.spabModel.mode = mavutil.mode_string_v10(msg)
         self.spabModel.is_armed = msg.base_mode & mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED
         self.spabModel.is_enabled = msg.base_mode & mavutil.mavlink.MAV_MODE_FLAG_GUIDED_ENABLED
 
     def handle_rc_raw(self, msg):
+        print("handle_rc_raw")
         self.spabModel.channels = (msg.chan1_raw, msg.chan2_raw,
                     msg.chan3_raw, msg.chan4_raw,
                     msg.chan5_raw, msg.chan6_raw,
                     msg.chan7_raw, msg.chan8_raw)
 
     def handle_hud(self, msg):
+        print("handle_hud")
         self.spabModel.hud_data = (msg.airspeed, msg.groundspeed,
                     msg.heading, msg.throttle,
                     msg.alt, msg.climb)
 
     def handle_attitude(self, msg):
+        print("handle_attitude")
         self.spabModel.attitude_data = (msg.roll, msg.pitch,
                         msg.yaw, msg.rollspeed,
                         msg.pitchspeed, msg.yawspeed)
 
     def handle_gps_filtered(self, msg):
+        print("handle_gps_filtered")
         gps_data = (msg.time_boot_ms, float(msg.lat)/10**7,
                     float(msg.lon)/(10**7), msg.alt,
                     msg.relative_alt, msg.vx, msg.vz, msg.hdg)

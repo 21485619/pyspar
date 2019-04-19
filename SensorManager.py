@@ -6,6 +6,8 @@ import time
 import SpabModel
 import adafruit_ads1x15.ads1115 as ADS
 from adafruit_ads1x15.analog_in import AnalogIn
+import board
+import busio
 import statistics
 
 
@@ -20,7 +22,9 @@ class SensorManager:
         self.camera = PiCamera()
         self.camera.resolution = (320, 240)
         self.camera.start_preview()
-        self.ads = ADS.ADS1115
+
+        i2c = busio.I2C(board.SCL, board.SDA)
+        self.ads = ADS.ADS1115(i2c)
         self.chan = AnalogIn(self.ads, ADS.P0)
 
     def start(self):
@@ -47,7 +51,7 @@ class SensorManager:
 
     def capture_image(self):
         print("capture_image")
-        filename = "image_" + str(self.spabModel.last_pic) + ".jpg"
+        filename = "image_" + str(self.spabModel.last_pic_num) + ".jpg"
         self.camera.capture(filename)
         self.spabModel.latest_image = self.convert(filename)
         if self.spabModel.last_pic_num < 10000:
@@ -102,13 +106,14 @@ class SensorManager:
 def main():
     task = sched.scheduler(time.time, time.sleep)
     spabModel = SpabModel.SpabModel()
-    sensor_manager = SensorManager(task, spabModel, 5, 30, 4)
+    sensor_manager = SensorManager(task, spabModel, 5, 10, 4)
     sensor_manager.start()
     task.run(False)
 
     while True:
         task.run(blocking=False)
         sensor_manager.update_readings()
+        print(spabModel.temperature)
         time.sleep(1)
 
 
