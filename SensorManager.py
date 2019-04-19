@@ -8,6 +8,7 @@ import adafruit_ads1x15.ads1115 as ADS
 from adafruit_ads1x15.analog_in import AnalogIn
 import board
 import busio
+import statistics
 
 
 class SensorManager:
@@ -21,14 +22,14 @@ class SensorManager:
         self.camera = PiCamera()
         self.camera.resolution = (320, 240)
         self.camera.start_preview()
-        self.pendingImage = False
+
         i2c = busio.I2C(board.SCL, board.SDA)
         self.ads = ADS.ADS1115(i2c)
         self.chan = AnalogIn(self.ads, ADS.P0)
 
     def start(self):
         # self.task.enter(6, 1, self.get_temp, ())
-        self.task.enter(10, 1, self.capture_image, argument=('image.jpg',))
+        self.task.enter(10, 1, self.capture_image, ())
         self.task.enter(8, 1, self.update_readings, ())
 
     def stop(self):
@@ -48,12 +49,16 @@ class SensorManager:
         # self.task.enter(self.temp_p, 1, self.get_temp,())
         return temp
 
-    def capture_image(self, filename):
+    def capture_image(self):
         print("capture_image")
+        filename = "image_" + str(self.spabModel.last_pic) + ".jpg"
         self.camera.capture(filename)
-        self.spabModel.image = self.convert(filename)
-        self.pendingImage = True
-        self.task.enter(self.pic_p, 1, self.capture_image, argument=('image.jpg',))
+        self.spabModel.latest_image = self.convert(filename)
+        if self.spabModel.last_pic_num < 10000:
+            self.spabModel.last_pic_num += 1
+        else:
+            self.spabModel.last_pic_num = 0
+        self.task.enter(self.pic_p, 1, self.capture_image, ())
 
     @staticmethod
     def convert(filename):
@@ -72,10 +77,10 @@ class SensorManager:
         for i in range(0, self.readings):
             volts.append(self.chan.voltage)
             time.sleep(0.025)
-        volt_sum = 0
-        for i in volts:
-            volt_sum += i
-        return volt_sum / self.readings
+        if volts:
+            return statistics.median(volts)
+        else:
+            return 0
 
     # TODO Calibrate
     # Return value of conductivity in ms/cm
