@@ -51,7 +51,7 @@ class SensorManager:
 
     def capture_image(self):
         print("capture_image")
-        filename = "image_" + str(self.spabModel.last_pic) + ".jpg"
+        filename = "image_" + str(self.spabModel.last_pic_num) + ".jpg"
         self.camera.capture(filename)
         self.spabModel.latest_image = self.convert(filename)
         if self.spabModel.last_pic_num < 10000:
@@ -106,7 +106,7 @@ class SensorManager:
 def main():
     task = sched.scheduler(time.time, time.sleep)
     spabModel = SpabModel.SpabModel()
-    sensor_manager = SensorManager(task, spabModel, 5, 30, 4)
+    sensor_manager = SensorManager(task, spabModel, 5, 10, 4)
     sensor_manager.start()
     task.run(False)
 

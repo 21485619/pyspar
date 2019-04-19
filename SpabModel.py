@@ -14,6 +14,7 @@ class SpabModel:
         self.channels = None
         self.attitude_data = None
         self.temperature = None
+        self.last_pic_num = 0
 
     def get_all_data(self):
             data = []
