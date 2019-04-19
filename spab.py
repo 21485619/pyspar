@@ -94,14 +94,14 @@ def main():
         #"MISSION_CURRENT": mavlinkManager.handle_mission_current
     }
 
-    #delete old pictures
-    dir_name = "/home/pi/pyspab/"
-    files = os.listdir(dir_name)
-    for item in files:
-        if item.endswith(".jpg"):
-            os.remove(os.path.join(dir_name, item))
+    # delete old pictures
+    # dir_name = "/home/pi/pyspab/"
+    # files = os.listdir(dir_name)
+    # for item in files:
+    #     if item.endswith(".jpg"):
+    #          #os.remove(os.path.join(dir_name, item))
     # set to run
-    #master.wait_heartbeat()
+    master.wait_heartbeat()
     master.mav.request_data_stream_send(master.target_system, master.target_component,
                                         mavutil.mavlink.MAV_DATA_STREAM_ALL, opts.rate, 1)
     master.mav.set_mode_send(master.target_system, 216, 216)
