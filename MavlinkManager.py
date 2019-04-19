@@ -114,16 +114,16 @@ class MavlinkManager:
         #         print("mission clear success")
         #         self.ack = True
         # elif self.last_msg == "upload_missions":
-        #     if msg.type != mavutil.mavlink.MAV_MISSION_ACCEPTED:
-        #         print("mission upload failed")
-        #     else:
-        #         print("mission upload success")
-        #         self.master.mav.mission_current_send(1)  # start misson at MavPt 1
-        #         self.master.mav.command_long_send(self.master.target_system, mavutil.mavlink.MAV_COMP_ID_ALL,
-        #                                           mavutil.mavlink.MAV_CMD_DO_SET_MODE, mavutil.mavlink.MAV_MODE_GUIDED_ARMED, 0, 0, 0, 0, 0, 0, 0)
-        #         self.Count = 0
-        #         self.Seq = 0
-        #         self.ack = True
+        if msg.type != mavutil.mavlink.MAV_MISSION_ACCEPTED:
+            print("mission upload failed")
+        else:
+            print("mission upload success")
+            self.master.mav.mission_current_send(1)  # start misson at MavPt 1
+            self.master.mav.command_long_send(self.master.target_system, mavutil.mavlink.MAV_COMP_ID_ALL,
+                                              mavutil.mavlink.MAV_CMD_DO_SET_MODE, mavutil.mavlink.MAV_MODE_GUIDED_ARMED, 0, 0, 0, 0, 0, 0, 0)
+            self.Count = 0
+            self.Seq = 0
+            self.ack = True
 
     def handle_mission_count(self, msg):
         #print("mission_count")
