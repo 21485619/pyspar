@@ -10,13 +10,15 @@ from optparse import OptionParser
 import collections
 import TelemManager
 import MavlinkManager
+import SensorManager
 import SpabModel
 
 
 task = sched.scheduler(time.time, time.sleep)
-telemPeriod = 20   # seconds
-# circular buffer to limit memory use
-Locations = collections.deque(maxlen=10)
+telemPeriod = 30   # seconds
+tempPeriod = 5
+imagePeriod = 60
+Locations = collections.deque(maxlen=10)    # circular buffer to limit memory use
 Delegates = {}
 Waypoints = []
 
@@ -75,6 +77,8 @@ def main():
             task, spabModel, modem, telemPeriod)
         mavlinkManager = MavlinkManager.MavlinkManager(
             task, spabModel, telemPeriod, master)
+        sensorManager = SensorManager.SensorManager(
+            task, spabModel, tempPeriod, imagePeriod, 7)
     except:
         print('failed to find devices')
         sys.exit(1)
@@ -96,9 +100,15 @@ def main():
         "BAD_DATA": mavlinkManager.handle_bad_data,
         "MISSION_COUNT": mavlinkManager.handle_mission_count,
         "MISSION_ITEM": mavlinkManager.handle_mission_item
-        # "MISSION_CURRENT": mavlinkManager.handle_mission_current
+        #"MISSION_CURRENT": mavlinkManager.handle_mission_current
     }
 
+    # delete old pictures
+    # dir_name = "/home/pi/pyspab/"
+    # files = os.listdir(dir_name)
+    # for item in files:
+    #     if item.endswith(".jpg"):
+    #          #os.remove(os.path.join(dir_name, item))
     # set to run
     master.wait_heartbeat()
     master.mav.request_data_stream_send(master.target_system, master.target_component,
@@ -106,6 +116,7 @@ def main():
     master.mav.set_mode_send(master.target_system, 216, 216)
     telemManager.start()
     mavlinkManager.start()
+    sensorManager.start()
     task.run(False)
     read_loop(master)
 

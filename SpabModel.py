@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 import os
 import sqlite3
+
+
 class SpabModel:
 
     def __init__(self):
@@ -14,7 +16,13 @@ class SpabModel:
         self.is_enabled = None
         self.channels = None
         self.attitude_data = None
+        self.temperature = None
+        self.last_pic_num = 0
+        self.latest_image = None
         self.databaseFilePath = 'SpabModel.sqlite3'
+
+    def get_all_data(self):
+            data = []
 
     def create_or_recreate_database(self):
         # Delete any pre-existing database from the filesystem

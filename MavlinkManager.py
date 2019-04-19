@@ -15,8 +15,6 @@ class MavlinkManager:
         self.last_msg = None
         self.ack = False
         self.last_ack = None
-        self.timeout = 5
-        self.p = Process()
 
     def missionSender(self):
         different = False

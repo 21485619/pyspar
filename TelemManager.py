@@ -5,11 +5,12 @@ import time
 
 
 class TelemManager:
-    def __init__(self, Scheduler, model, Modem, TelemPeriod):
+    def __init__(self, Scheduler, model, Modem, TelemPeriod, SensorManager):
         self.task = Scheduler
         self.spabModel = model
         self.modem = Modem
         self.PollingPeriod = TelemPeriod
+        self.sensor_manager = SensorManager
         self.AcceptedCommands = collections.deque(maxlen=10)
 
     def remoteTelemetry(self):
@@ -57,9 +58,9 @@ Content-Length: """
     def HandleReceipt(self, sender, earg):
         # print(earg)
         s = earg.decode("utf-8")
+        print(s)
         # deal with http headers
         lines = s.splitlines()
-        print(lines)
         if(lines[0] == "HTTP/1.1 200 OK"):
             s = lines[10]
         # deal with json
