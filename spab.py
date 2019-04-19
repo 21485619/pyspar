@@ -68,7 +68,7 @@ def main():
         spabModel = SpabModel.SpabModel()
         telemManager = TelemManager.TelemManager(task, spabModel, modem, telemPeriod)
         mavlinkManager = MavlinkManager.MavlinkManager(task, spabModel, telemPeriod, master)
-        sensorManager = SensorManager.SensorManager(task, spabModel, tempPeriod, imagePeriod)
+        sensorManager = SensorManager.SensorManager(task, spabModel, tempPeriod, imagePeriod, 7)
     except:
         print('failed to find devices')
         sys.exit(1)
@@ -93,6 +93,12 @@ def main():
         #"MISSION_CURRENT": mavlinkManager.handle_mission_current
     }
 
+    #delete old pictures
+    dir_name = "/home/pi/pyspab/"
+    files = os.listdir(dir_name)
+    for item in files:
+        if item.endswith(".jpg"):
+            os.remove(os.path.join(dir_name, item))
     # set to run
     master.wait_heartbeat()
     master.mav.request_data_stream_send(master.target_system, master.target_component,
