@@ -5,11 +5,12 @@ import time
 from multiprocessing import Process
 
 class MavlinkManager:
-    def __init__(self, Scheduler, model, PollingPeriod, Master):
+    def __init__(self, Scheduler, model, PollingPeriod, Master, telem_manager):
         self.task = Scheduler
         self.spabModel = model    # circular buffer to limit memory use
         self.PollingPeriod = PollingPeriod
         self.master = Master
+        self.telem_manager = telem_manager
         self.Seq = 0
         self.Count = 0
         self.last_msg = None
@@ -99,6 +100,11 @@ class MavlinkManager:
                     msg.relative_alt, msg.vx, msg.vz, msg.hdg)
         self.spabModel.LastLocation = dict(zip(
             ('timestamp', 'latitude', 'longitude', 'temperature', 'salinity'), gps_data[0:3]+(0, 0)))
+
+    def handle_mission_item_reached(self, msg):
+        print("Waypoint reached")
+        self.telem_manager.waypoint_reached_send(msg.seq)
+
 
     def handle_mission_ack(self, msg):
         print("handle_mission_ack")

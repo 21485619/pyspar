@@ -76,7 +76,7 @@ def main():
         telemManager = TelemManager.TelemManager(
             task, spabModel, modem, telemPeriod)
         mavlinkManager = MavlinkManager.MavlinkManager(
-            task, spabModel, telemPeriod, master)
+            task, spabModel, telemPeriod, master, telemManager)
         sensorManager = SensorManager.SensorManager(
             task, spabModel, tempPeriod, imagePeriod, 7)
     except:
@@ -99,7 +99,8 @@ def main():
         "RC_CHANNELS_RAW": mavlinkManager.handle_rc_raw,
         "BAD_DATA": mavlinkManager.handle_bad_data,
         "MISSION_COUNT": mavlinkManager.handle_mission_count,
-        "MISSION_ITEM": mavlinkManager.handle_mission_item
+        "MISSION_ITEM": mavlinkManager.handle_mission_item,
+        "Mission_ITEM_REACHED": mavlinkManager.handle_mission_item_reached
         #"MISSION_CURRENT": mavlinkManager.handle_mission_current
     }
 

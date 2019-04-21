@@ -17,7 +17,16 @@ class TelemManager:
         #print('remote telemetry')
         # self.spabModel.LastLocation = dict(zip(
         #    ('timestamp', 'latitude', 'longitude', 'temperature', 'salinity'),  ("0", 111, 66) + (0, 0)))
-        body = json.dumps(self.spabModel.LastLocation)
+        self.sensor_manager.update_readings()
+        body_dict = {
+            "msg_type": "data_upload",
+            "boat_id": "spar1",
+            "position": self.spabModel.LastLocation,
+            "temp": self.spabModel.temperature,
+            "conductivity": self.spabModel.conductivity,
+            "img": self.spabModel.latest_image
+        }
+        body = json.dumps(body_dict)
         length = len(body)
         req = """POST /solarboat/api/data.cgi HTTP/1.1
 Host: therevproject.com
@@ -30,6 +39,27 @@ Content-Length: """
         print("POST")
         self.modem.send(req)
         self.task.enter(self.PollingPeriod, 1, self.requestCommands, ())
+
+    def waypoint_reached_send(self, seq):
+        waypoint = self.spabModel.Waypoints[seq]
+        body_dict = {
+            "msg_type": "waypoint_reached",
+            "boat_id": "spar1",
+            "latitude": waypoint[0],
+            "longitude": waypoint[1]
+        }
+        body = json.dumps(body_dict)
+        length = len(body)
+        req = """POST /solarboat/api/data.cgi HTTP/1.1
+Host: therevproject.com
+Accept: */*
+Connection: close
+Content-type: application/json
+Content-Length: """
+        req += str(length) + "\r\n\r\n"
+        req += body + "\r\n\r\n"
+        print("POST")
+        self.modem.send(req)
 
     def requestCommands(self):
         #print('request commands')
