@@ -17,6 +17,7 @@ class SpabModel:
         self.channels = None
         self.attitude_data = None
         self.temperature = None
+        self.conductivity = None
         self.last_pic_num = 0
         self.latest_image = None
         self.databaseFilePath = 'SpabModel.sqlite3'
