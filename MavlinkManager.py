@@ -40,22 +40,41 @@ class MavlinkManager:
         print("start_waypoint_send")
         #print(self.master.target_system,
         #     mavutil.mavlink.MAV_COMP_ID_MISSIONPLANNER, waypoint_count)
-        self.master.mav.mission_count_send(
-            self.master.target_system, mavutil.mavlink.MAV_COMP_ID_MISSIONPLANNER, waypoint_count)
+        try:
+            self.master.mav.mission_count_send(
+                self.master.target_system, mavutil.mavlink.MAV_COMP_ID_MISSIONPLANNER, waypoint_count)
+        except:
+            print("mavutil send failure, re-attempting")
+            self.start_waypoint_send(waypoint_count)
 
     def getWaypoints(self):
-        self.master.mav.mission_request_list_send(
-            self.master.target_system, mavutil.mavlink.MAV_COMP_ID_MISSIONPLANNER)
+        try:
+            self.master.mav.mission_request_list_send(
+                self.master.target_system, mavutil.mavlink.MAV_COMP_ID_MISSIONPLANNER)
+        except:
+            print("mavutil send failure, re-attempting")
+            self.getWaypoints()
+            return
         self.task.enter(20, 1, self.getWaypoints, ())
 
     def clear_missions(self):
-        self.master.mav.mission_clear_all_send(self.master.target_system, mavutil.mavlink.MAV_COMP_ID_MISSIONPLANNER)
+        try:
+            self.master.mav.mission_clear_all_send(self.master.target_system, mavutil.mavlink.MAV_COMP_ID_MISSIONPLANNER)
+        except:
+            print("mavutil send failure, re-attempting")
+            self.clear_missions()
+            return
         self.last_msg = "clear_missions"
 
     def update_home(self):
-        self.master.mav.set_home_position_send(
-            self.master.target_system, self.spabModel.newHome(0), self.spabModel.newHome(1),
-            0, 0, 0, 0, 0, 0, 0, 0)
+        try:
+            self.master.mav.set_home_position_send(
+                self.master.target_system, self.spabModel.newHome(0), self.spabModel.newHome(1),
+                0, 0, 0, 0, 0, 0, 0, 0)
+        except:
+            print("mavutil send failure, re-attempting")
+            self.update_home()
+
 
     def start(self):
         self.task.enter(self.PollingPeriod, 1, self.missionSender, ())
@@ -99,7 +118,7 @@ class MavlinkManager:
                     float(msg.lon)/(10**7), msg.alt,
                     msg.relative_alt, msg.vx, msg.vz, msg.hdg)
         self.spabModel.LastLocation = dict(zip(
-            ('timestamp', 'latitude', 'longitude', 'temperature', 'salinity'), gps_data[0:3]+(0, 0)))
+            ('timestamp', 'latitude', 'longitude'), gps_data[0:3]))
 
     def handle_mission_item_reached(self, msg):
         print("Waypoint reached")
@@ -122,9 +141,14 @@ class MavlinkManager:
             print("mission upload failed")
         else:
             print("mission upload success")
-            self.master.mav.mission_current_send(1)  # start misson at MavPt 1
-            self.master.mav.command_long_send(self.master.target_system, mavutil.mavlink.MAV_COMP_ID_ALL,
-                                              mavutil.mavlink.MAV_CMD_DO_SET_MODE, mavutil.mavlink.MAV_MODE_GUIDED_ARMED, 0, 0, 0, 0, 0, 0, 0)
+            try:
+                self.master.mav.mission_current_send(1)  # start misson at MavPt 1
+                self.master.mav.command_long_send(self.master.target_system, mavutil.mavlink.MAV_COMP_ID_ALL,
+                                                  mavutil.mavlink.MAV_CMD_DO_SET_MODE, mavutil.mavlink.MAV_MODE_GUIDED_ARMED, 0, 0, 0, 0, 0, 0, 0)
+            except:
+                print("mavutil send failure, re-attempting")
+                self.handle_mission_ack(msg)
+                return
             self.Count = 0
             self.Seq = 0
             self.ack = True
@@ -134,8 +158,12 @@ class MavlinkManager:
         self.Count = msg.count
         self.Seq = 0
         #print(str(self.Count) + " waypoints")
-        self.master.mav.mission_request_send(
-            self.master.target_system, mavutil.mavlink.MAV_COMP_ID_ALL, self.Seq)
+        try:
+            self.master.mav.mission_request_send(
+                self.master.target_system, mavutil.mavlink.MAV_COMP_ID_ALL, self.Seq)
+        except:
+            print("mavutil send failure, re-attempting")
+            self.handle_mission_ack(msg)
 
     def handle_mission_item(self, msg):
         #print("mission_item")
@@ -150,12 +178,22 @@ class MavlinkManager:
                     self.spabModel.Waypoints[msg.seq - 1] = (msg.x, msg.y)
                 else:
                     self.spabModel.Waypoints.append((msg.x, msg.y))
-            self.master.mav.mission_request_send(
-                self.master.target_system, mavutil.mavlink.MAV_COMP_ID_ALL, self.Seq)
+            try:
+                self.master.mav.mission_request_send(
+                    self.master.target_system, mavutil.mavlink.MAV_COMP_ID_ALL, self.Seq)
+            except:
+                print("mavutil send failure, re-attempting")
+                self.handle_mission_item(msg)
+                return
             self.Seq += 1
         else:
-            self.master.mav.mission_ack_send(
-                self.master.target_system, mavutil.mavlink.MAV_COMP_ID_ALL, mavutil.mavlink.MAV_MISSION_ACCEPTED)
+            try:
+                self.master.mav.mission_ack_send(
+                    self.master.target_system, mavutil.mavlink.MAV_COMP_ID_ALL, mavutil.mavlink.MAV_MISSION_ACCEPTED)
+            except:
+                print("mavutil send failure, re-attempting")
+                self.handle_mission_item(msg)
+                return
             print("Spab Waypoints:")
             print(self.spabModel.Waypoints)
 
@@ -175,11 +213,16 @@ class MavlinkManager:
             waypoint = self.spabModel.pendingWaypoints[msg.seq-1]
         print(waypoint)
         if waypoint:
-            self.master.mav.mission_item_send(self.master.target_system,
-                                              mavutil.mavlink.MAV_COMP_ID_ALL,
-                                              msg.seq,
-                                              mavutil.mavlink.MAV_FRAME_GLOBAL,
-                                              mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1, 1,
-                                              1.0, 15.0, 0.0,
-                                              0.0, waypoint[0], waypoint[1], 0)
+            try:
+                self.master.mav.mission_item_send(self.master.target_system,
+                                                  mavutil.mavlink.MAV_COMP_ID_ALL,
+                                                  msg.seq,
+                                                  mavutil.mavlink.MAV_FRAME_GLOBAL,
+                                                  mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1, 1,
+                                                  1.0, 15.0, 0.0,
+                                                  0.0, waypoint[0], waypoint[1], 0)
+            except:
+                print("mavutil send failure, re-attempting")
+                self.handle_mission_request(msg)
+                return
         pass  # eof

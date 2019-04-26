@@ -21,7 +21,7 @@ class SensorManager:
         self.temp_sensor = DS18B20()
         self.camera = PiCamera()
         self.camera.resolution = (320, 240)
-        self.camera.start_preview()
+        #self.camera.start_preview()
 
         i2c = busio.I2C(board.SCL, board.SDA)
         self.ads = ADS.ADS1115(i2c)

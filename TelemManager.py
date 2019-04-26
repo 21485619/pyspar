@@ -20,11 +20,13 @@ class TelemManager:
         self.sensor_manager.update_readings()
         body_dict = {
             "msg_type": "data_upload",
-            "boat_id": "spar1",
-            "position": self.spabModel.LastLocation,
-            "temp": self.spabModel.temperature,
-            "conductivity": self.spabModel.conductivity,
-            "img": self.spabModel.latest_image
+            "sourceId": "spar1",
+            "timestamp": self.spabModel.LastLocation["timestamp"],
+            "latitude": self.spabModel.LastLocation["latitude"],
+            "longitude": self.spabModel.LastLocation["longitude"],
+            "temperature": self.spabModel.temperature,
+            "salinity": self.spabModel.conductivity
+            # "img": self.spabModel.latest_image
         }
         body = json.dumps(body_dict)
         length = len(body)
@@ -36,7 +38,7 @@ Content-type: application/json
 Content-Length: """
         req += str(length) + "\r\n\r\n"
         req += body + "\r\n\r\n"
-        print("POST")
+        print(req)
         self.modem.send(req)
         self.task.enter(self.PollingPeriod, 1, self.requestCommands, ())
 
@@ -44,9 +46,12 @@ Content-Length: """
         waypoint = self.spabModel.Waypoints[seq]
         body_dict = {
             "msg_type": "waypoint_reached",
-            "boat_id": "spar1",
+            "source_id": "spar1",
+            "timestamp": self.spabModel.LastLocation["timestamp"],
             "latitude": waypoint[0],
-            "longitude": waypoint[1]
+            "longitude": waypoint[1],
+            "temperature": -1,
+            "salinity": -2
         }
         body = json.dumps(body_dict)
         length = len(body)
@@ -58,7 +63,7 @@ Content-type: application/json
 Content-Length: """
         req += str(length) + "\r\n\r\n"
         req += body + "\r\n\r\n"
-        print("POST")
+        print(req)
         self.modem.send(req)
 
     def requestCommands(self):
