@@ -26,9 +26,12 @@ class F2414Modem:
 
     def __monitor(self):
        while not self.die:
-           data = self.sport.read(self.blocksize)
-           if data is not b'':
-               self.__DataReceived(self, earg=data)
+            try:
+                data = self.sport.read(self.blocksize)
+            except:
+                data = b''
+            if data is not b'':
+                self.__DataReceived(self, earg=data)
 
     def __init__(self, port, baudrate):
         """ Create the monitor by specifying serial port and baudrate """

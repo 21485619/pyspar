@@ -10,7 +10,11 @@ class SpabModel:
         self.pendingWaypoints = [] # Expect each pending waypoint as a tuple in the form (id, latitude, longitude)
         self.curentHome = ()
         self.newHome = ()
-        self.LastLocation = {}
+        self.LastLocation = {
+            'timestamp': 0,
+            'latitude': 0,
+            'longitude': 0
+        }
         self.mode = None
         self.is_armed = None
         self.is_enabled = None

@@ -19,8 +19,8 @@ class SensorManager:
         self.pic_p = pic_period
         self.readings = readings
         self.temp_sensor = DS18B20()
-        self.camera = PiCamera()
-        self.camera.resolution = (320, 240)
+        #self.camera = PiCamera()
+        #self.camera.resolution = (320, 240)
         #self.camera.start_preview()
 
         i2c = busio.I2C(board.SCL, board.SDA)
@@ -29,7 +29,7 @@ class SensorManager:
 
     def start(self):
         # self.task.enter(6, 1, self.get_temp, ())
-        self.task.enter(10, 1, self.capture_image, ())
+        #self.task.enter(10, 1, self.capture_image, ())
         self.task.enter(8, 1, self.update_readings, ())
 
     def stop(self):

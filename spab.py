@@ -26,7 +26,10 @@ Waypoints = []
 def read_loop(m):
     while True:
         task.run(blocking=False)
-        msg = m.recv_match(blocking=False)
+        try:
+            msg = m.recv_match(blocking=False)
+        except:
+            continue
         if not msg:
             continue
         msg_type = msg.get_type()
@@ -111,7 +114,7 @@ def main():
     #     if item.endswith(".jpg"):
     #          #os.remove(os.path.join(dir_name, item))
     # set to run
-    master.wait_heartbeat()
+    # master.wait_heartbeat()
     try:
         master.mav.request_data_stream_send(master.target_system, master.target_component,
                                         mavutil.mavlink.MAV_DATA_STREAM_ALL, opts.rate, 1)
