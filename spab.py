@@ -10,22 +10,26 @@ from optparse import OptionParser
 import collections
 import TelemManager
 import MavlinkManager
+import SensorManager
 import SpabModel
 
 
 task = sched.scheduler(time.time, time.sleep)
 telemPeriod = 30   # seconds
-# circular buffer to limit memory use
-Locations = collections.deque(maxlen=10)
+tempPeriod = 5
+imagePeriod = 60
+Locations = collections.deque(maxlen=10)    # circular buffer to limit memory use
 Delegates = {}
 Waypoints = []
 
 
 def read_loop(m):
     while True:
-        #print("read_loop")
         task.run(blocking=False)
-        msg = m.recv_match(blocking=False)
+        try:
+            msg = m.recv_match(blocking=False)
+        except:
+            continue
         if not msg:
             continue
         msg_type = msg.get_type()
@@ -47,7 +51,7 @@ def catch(sig, frame):
 def main():
     parser = OptionParser("spab.py [options]")
     parser.add_option("--baudrate", dest="baudrate", type='int',
-                      help='master port baud rate', default=57600)
+                      help='master port baud rate', default=115200)
     parser.add_option("--device", dest="device",
                       default=None, help="serial device")
     parser.add_option("--modem", dest="mport", default=None,
@@ -70,12 +74,14 @@ def main():
     # init objects
     try:
         master = mavutil.mavlink_connection(opts.device, baud=opts.baudrate)
-        modem = F2414Modem.F2414Modem(opts.mport, baudrate=opts.baudrate)
+        modem = F2414Modem.F2414Modem(opts.mport, baudrate=9600)
         spabModel = SpabModel.SpabModel()
+        sensorManager = SensorManager.SensorManager(
+            task, spabModel, tempPeriod, imagePeriod, 7)
         telemManager = TelemManager.TelemManager(
-            task, spabModel, modem, telemPeriod)
+            task, spabModel, modem, telemPeriod, sensorManager)
         mavlinkManager = MavlinkManager.MavlinkManager(
-            task, spabModel, telemPeriod, master)
+            task, spabModel, telemPeriod, master, telemManager)
     except:
         print('failed to find devices')
         sys.exit(1)
@@ -96,17 +102,29 @@ def main():
         "RC_CHANNELS_RAW": mavlinkManager.handle_rc_raw,
         "BAD_DATA": mavlinkManager.handle_bad_data,
         "MISSION_COUNT": mavlinkManager.handle_mission_count,
-        "MISSION_ITEM": mavlinkManager.handle_mission_item
-        # "MISSION_CURRENT": mavlinkManager.handle_mission_current
+        "MISSION_ITEM": mavlinkManager.handle_mission_item,
+        "Mission_ITEM_REACHED": mavlinkManager.handle_mission_item_reached
+        #"MISSION_CURRENT": mavlinkManager.handle_mission_current
     }
 
+    # delete old pictures
+    # dir_name = "/home/pi/pyspab/"
+    # files = os.listdir(dir_name)
+    # for item in files:
+    #     if item.endswith(".jpg"):
+    #          #os.remove(os.path.join(dir_name, item))
     # set to run
-    #master.wait_heartbeat()
-    master.mav.request_data_stream_send(master.target_system, master.target_component,
+    # master.wait_heartbeat()
+    try:
+        master.mav.request_data_stream_send(master.target_system, master.target_component,
                                         mavutil.mavlink.MAV_DATA_STREAM_ALL, opts.rate, 1)
-    master.mav.set_mode_send(master.target_system, 216, 216)
+        master.mav.set_mode_send(master.target_system, 216, 216)
+    except:
+        print("data stream request failed")
+        sys.exit(1)
     telemManager.start()
     mavlinkManager.start()
+    sensorManager.start()
     task.run(False)
     read_loop(master)
 

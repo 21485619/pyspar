@@ -1,2 +1,4 @@
 pymavlink
 pyserial
+ds18b20
+picamera

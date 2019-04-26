@@ -4,11 +4,10 @@ import threading
 import os
 
 class F2414Modem:
-
     def send(self, data):
         """ Send string to remote server """
         self.sport.write(b'don')
-        time.sleep(1)
+        time.sleep(0.8)
         self.sport.write(bytearray(data, encoding='utf-8'))
 
     def subscribe(self, handler):
@@ -27,16 +26,19 @@ class F2414Modem:
 
     def __monitor(self):
        while not self.die:
-           data = self.sport.read(self.blocksize)
-           if data is not b'':
-               self.__DataReceived(self, earg=data)
+            try:
+                data = self.sport.read(self.blocksize)
+            except:
+                data = b''
+            if data is not b'':
+                self.__DataReceived(self, earg=data)
 
     def __init__(self, port, baudrate):
         """ Create the monitor by specifying serial port and baudrate """
         ser = serial.Serial(port)
         self.die = False
         self.blocksize = 1024
-        ser.baudrate = 115200
+        ser.baudrate = baudrate
         ser.timeout = 1
         self.sport = ser
         self.handlers = []
