@@ -114,13 +114,12 @@ class MavlinkManager:
 
     def handle_gps_filtered(self, msg):
         #print("handle_gps_filtered")
-        gps_data = (msg.time_boot_ms, float(msg.lat)/10**7,
+        gps_data = (float(msg.lat)/10**7,
                     float(msg.lon)/(10**7), msg.alt,
                     msg.relative_alt, msg.vx, msg.vz, msg.hdg)
-        if gps_data[1] != 0 and gps_data[2] != 0:
-            self.spabModel.LastLocation = dict(zip(
-                ('timestamp', 'latitude', 'longitude'), gps_data[0:3]))
-            #print("Current Location: ", self.spabModel.LastLocation)
+        if gps_data[0] != 0 and gps_data[1] != 0:
+            self.spabModel.LastLocation['latitude'] = gps_data[0]
+            self.spabModel.LastLocation['longitude'] = gps_data[1]
 
     def handle_mission_item_reached(self, msg):
         print("Waypoint reached")
@@ -228,3 +227,8 @@ class MavlinkManager:
                 self.handle_mission_request(msg)
                 return
         pass  # eof
+    
+    def handle_system_time(self, msg):
+        gpsTime = int(msg.time_unix_usec)
+        print(msg, gpsTime)
+        self.spabModel.LastLocation["timestamp"] = gpsTime

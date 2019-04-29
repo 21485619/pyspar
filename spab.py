@@ -103,7 +103,8 @@ def main():
         "BAD_DATA": mavlinkManager.handle_bad_data,
         "MISSION_COUNT": mavlinkManager.handle_mission_count,
         "MISSION_ITEM": mavlinkManager.handle_mission_item,
-        "Mission_ITEM_REACHED": mavlinkManager.handle_mission_item_reached
+        "Mission_ITEM_REACHED": mavlinkManager.handle_mission_item_reached,
+        "SYSTEM_TIME": mavlinkManager.handle_system_time
         #"MISSION_CURRENT": mavlinkManager.handle_mission_current
     }
 
