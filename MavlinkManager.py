@@ -229,6 +229,8 @@ class MavlinkManager:
         pass  # eof
     
     def handle_system_time(self, msg):
-        gpsTime = int(msg.time_unix_usec)
-        print(msg, gpsTime)
-        self.spabModel.LastLocation["timestamp"] = gpsTime
+        try:
+            unixTimeMs = int(int(msg.time_unix_usec)/1000)
+            self.spabModel.LastLocation["timestamp"] = unixTimeMs
+        except:
+            print("Error handling system_time")
