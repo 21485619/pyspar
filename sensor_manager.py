@@ -86,7 +86,7 @@ class SensorManager:
     # Return value of conductivity in ms/cm
     def get_conductivity(self, temp, cv):
         temp_coefficient = 1.0 + 0.0185 * (temp - 25.0)
-        volt_coefficient = cv / 1000 / temp_coefficient
+        volt_coefficient = cv * 1000 / temp_coefficient
         if volt_coefficient < 150:
             print("No solution")
             conductivity = 0
