@@ -5,13 +5,13 @@ import os
 import sched
 import time
 from pymavlink import mavutil
-import F2414Modem
+import F2414_modem
 from optparse import OptionParser
 import collections
-import TelemManager
-import MavlinkManager
-import SensorManager
-import SpabModel
+import telem_manager
+import mavlink_manager
+import sensor_manager
+import spab_model
 
 
 task = sched.scheduler(time.time, time.sleep)
@@ -49,7 +49,7 @@ def catch(sig, frame):
 
 
 def main():
-    parser = OptionParser("spab.py [options]")
+    parser = OptionParser("spar.py [options]")
     parser.add_option("--baudrate", dest="baudrate", type='int',
                       help='master port baud rate', default=115200)
     parser.add_option("--device", dest="device",
@@ -74,13 +74,13 @@ def main():
     # init objects
     try:
         master = mavutil.mavlink_connection(opts.device, baud=opts.baudrate)
-        modem = F2414Modem.F2414Modem(opts.mport, baudrate=9600)
-        spabModel = SpabModel.SpabModel()
-        sensorManager = SensorManager.SensorManager(
+        modem = F2414_modem.F2414Modem(opts.mport, baudrate=9600)
+        spabModel = spab_model.SpabModel()
+        sensorManager = sensor_manager.SensorManager(
             task, spabModel, tempPeriod, imagePeriod, 7)
-        telemManager = TelemManager.TelemManager(
+        telemManager = telem_manager.TelemManager(
             task, spabModel, modem, telemPeriod, sensorManager)
-        mavlinkManager = MavlinkManager.MavlinkManager(
+        mavlinkManager = mavlink_manager.MavlinkManager(
             task, spabModel, telemPeriod, master, telemManager)
     except:
         print('failed to find devices')
