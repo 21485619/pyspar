@@ -11,7 +11,7 @@ import collections
 import telem_manager
 import mavlink_manager
 import sensor_manager
-import spab_model
+import spar_model
 
 
 task = sched.scheduler(time.time, time.sleep)
@@ -75,7 +75,7 @@ def main():
     try:
         master = mavutil.mavlink_connection(opts.device, baud=opts.baudrate)
         modem = F2414_modem.F2414Modem(opts.mport, baudrate=9600)
-        spabModel = spab_model.SpabModel()
+        spabModel = spar_model.SpabModel()
         sensorManager = sensor_manager.SensorManager(
             task, spabModel, tempPeriod, imagePeriod, 7)
         telemManager = telem_manager.TelemManager(

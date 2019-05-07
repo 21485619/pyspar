@@ -3,7 +3,7 @@ from picamera import PiCamera
 import base64
 import sched
 import time
-import SpabModel
+import spar_model
 import adafruit_ads1x15.ads1115 as ADS
 from adafruit_ads1x15.analog_in import AnalogIn
 import board
@@ -105,7 +105,7 @@ class SensorManager:
 
 def main():
     task = sched.scheduler(time.time, time.sleep)
-    spabModel = SpabModel.SpabModel()
+    spabModel = spar_model.SpabModel()
     sensor_manager = SensorManager(task, spabModel, 5, 10, 4)
     sensor_manager.start()
     task.run(False)
