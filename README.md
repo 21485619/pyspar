@@ -14,6 +14,9 @@ Add `dtoverlay=pi3-disable-bt` and `enable_uart=1` to the end of /boot/config.tx
 ## disable linux console on GPIO pins
 By default the linux console is attached to the GPIO pins. This will prevent the UART from being used for other things. To disable this remove `console=serial0,115200` from `/boot/cmdline.txt`
 
+## Change 1-wire pin
+By default, the  1-wire interface is on GPIO pin 4, but this pin is also used by the camera. To fix this, add the line `dtoverlay=w1-gpio,gpiopin=27` to the end of /boot/config.txt.
+
 ## Running at startup
 In order to run immediately at startup and to maintain reliability a shell script (spab.sh) is used. If the python process dies, the shell script will restart the process.
 
