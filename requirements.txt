@@ -2,3 +2,5 @@ pymavlink
 pyserial
 ds18b20
 picamera
+Adafruit-Blinka
+adafruit-circuitpython-ads1x15
